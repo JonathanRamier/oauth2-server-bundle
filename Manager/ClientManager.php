@@ -5,6 +5,9 @@ namespace OAuth2\ServerBundle\Manager;
 use Doctrine\ORM\EntityManager;
 use OAuth2\ServerBundle\Exception\ScopeNotFoundException;
 
+/**
+ * Client Manager Class
+ */
 class ClientManager
 {
     private $em;
@@ -14,6 +17,12 @@ class ClientManager
      */
     private $sm;
 
+    /**
+     * Constructor
+     *
+     * @param EntityManager         $entityManager
+     * @param ScopeManagerInterface $scopeManager
+     */
     public function __construct(EntityManager $entityManager, ScopeManagerInterface $scopeManager)
     {
         $this->em = $entityManager;
@@ -24,29 +33,31 @@ class ClientManager
      * Creates a new client
      *
      * @param string $identifier
-     *
-     * @param array $redirect_uris
-     *
-     * @param array $grant_type
-     *
-     * @param array $scopes
+     * @param array  $redirectUris
+     * @param array  $grantTypes
+     * @param array  $scopes
+     * @param bool   $isPublic
      *
      * @return Client
      */
-    public function createClient($identifier, array $redirect_uris = array(), array $grant_types = array(), array $scopes = array())
+    public function createClient($identifier, array $redirectUris = array(), array $grantTypes = array(), array $scopes = array(), $isPublic = false)
     {
         $client = new \OAuth2\ServerBundle\Entity\Client();
         $client->setClientId($identifier);
-        $client->setClientSecret($this->generateSecret());
-        $client->setRedirectUri($redirect_uris);
-        $client->setGrantTypes($grant_types);
+        if (!$isPublic) {
+            $client->setClientSecret($this->generateSecret());
+        }
+        $client->setRedirectUri($redirectUris);
+        $client->setGrantTypes($grantTypes);
 
-        // Verify scopes
-        foreach ($scopes as $scope) {
-            // Get Scope
-            $scopeObject = $this->sm->findScopeByScope($scope);
-            if (!$scopeObject) {
-                throw new ScopeNotFoundException();
+        if (!$scopes) {
+            // Verify scopes
+            foreach ($scopes as $scope) {
+                // Get Scope
+                $scopeObject = $this->sm->findScopeByScope($scope);
+                if (!$scopeObject) {
+                    throw new ScopeNotFoundException();
+                }
             }
         }
 
